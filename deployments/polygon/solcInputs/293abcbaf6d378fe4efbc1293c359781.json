@@ -1,0 +1,41 @@
+{
+  "language": "Solidity",
+  "sources": {
+    "contracts/FundMe.sol": {
+      "content": "//SPDX-License-Identifier: MIT\npragma solidity ^0.8.0                                                                                      ;\nimport \"./PricingLibrary.sol\" \n\n\n//contract deployment gas amount before\n/*\ngas amount : 979476 gas \ntransaction cost : 851718 gas\n*/          \n//contract deployment gas amount before\n/*\ngas amount : 957246 gas\ntransaction cost : 832387 gas\n*/                                                  ;\ncontract FundMe {\n\n    using PriceFeed for uint256                                                                             ;\n    address public owner_of_this_contract                                                                          ;\n    uint256 public constant  MIN_USD = 50 * 1e18                                                                  ;\n    address [] public funders                                                                               ;\n    mapping(address => uint256) public  funded_amount                                                       ;\n    AggregatorV3Interface private pricefeed;\n\n    constructor(address pricefeed_address) {\n        owner_of_this_contract = msg.sender                                                                 ;\n        pricefeed = AggregatorV3Interface(pricefeed_address);\n    }  \n\n    function fund_deposit () public payable {\n        require(msg.value.conversion(pricefeed) >= MIN_USD, \"Minimum Ether/Gwei value Provided is incorrect \")     ;\n        address funder = msg.sender                                                                          ;\n        funders.push(funder)                                                                                 ;\n        funded_amount[funder] = msg.value                                                                    ;\n    } \n\n    function fund_withdraw () public onlyOwner {\n        for(uint256 funder_POINTER = 0; funder_POINTER < funders.length; funder_POINTER++){\n            address funder_address = funders[funder_POINTER]                                                 ;\n            funded_amount[funder_address] = 0                                                                ;\n        } //0x12bE07624a8F5A9d53AFBf1c0E9052B19293b287\n        funders = new address [] (0)                                                                         ;\n        (bool transfer_state,) = payable(msg.sender).call{value: address(this).balance}(\"\")                  ;\n        require(transfer_state, \"UnAuthorized Withdrawer!!!\")                                                ;\n    }\n\n    modifier onlyOwner {\n        require(owner_of_this_contract == msg.sender, \"UnAuthorized to withdraw funds!!!\")                   ;\n        _                                                                                                    ;\n    }\n\n}"
+    },
+    "contracts/PricingLibrary.sol": {
+      "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.0      ;\r\nimport \"@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol\"                                         ;\r\n\r\nlibrary PriceFeed {\r\n\r\n     function priceUSD (AggregatorV3Interface chainlink_datafeed) view internal returns(uint256){ \r\n        (,int256 answer,,,) = chainlink_datafeed.latestRoundData()                                                           ;\r\n        return(uint256(answer * 1e10))                                                                              ;\r\n    }\r\n\r\n    function conversion(uint256 ethAmount, AggregatorV3Interface chainlink_datafeed) view internal returns(uint256){\r\n        return(priceUSD(chainlink_datafeed) * ethAmount) / 1e18                                                                       ;\r\n    }\r\n}"
+    },
+    "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol": {
+      "content": "// SPDX-License-Identifier: MIT\npragma solidity ^0.8.0;\n\ninterface AggregatorV3Interface {\n  function decimals() external view returns (uint8);\n\n  function description() external view returns (string memory);\n\n  function version() external view returns (uint256);\n\n  // getRoundData and latestRoundData should both raise \"No data present\"\n  // if they do not have data to report, instead of returning unset values\n  // which could be misinterpreted as actual reported values.\n  function getRoundData(uint80 _roundId)\n    external\n    view\n    returns (\n      uint80 roundId,\n      int256 answer,\n      uint256 startedAt,\n      uint256 updatedAt,\n      uint80 answeredInRound\n    );\n\n  function latestRoundData()\n    external\n    view\n    returns (\n      uint80 roundId,\n      int256 answer,\n      uint256 startedAt,\n      uint256 updatedAt,\n      uint80 answeredInRound\n    );\n}\n"
+    }
+  },
+  "settings": {
+    "optimizer": {
+      "enabled": false,
+      "runs": 200
+    },
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "evm.methodIdentifiers",
+          "metadata",
+          "devdoc",
+          "userdoc",
+          "storageLayout",
+          "evm.gasEstimates"
+        ],
+        "": [
+          "ast"
+        ]
+      }
+    },
+    "metadata": {
+      "useLiteralContent": true
+    }
+  }
+}
